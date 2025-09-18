@@ -105,7 +105,8 @@ def add_token_route(app: FastAPI, handler: Callable, asynced: bool = False) -> F
     ) -> Token:
         if asynced:
             user_id, payload = await handler(form_data, request, response)
-        user_id, payload = handler(form_data, request, response)
+        else:
+            user_id, payload = handler(form_data, request, response)
         token = await AuthenticationHandler().authenticate(response, user_id, payload)
         return Token(user_id=user_id, token=token)
 
