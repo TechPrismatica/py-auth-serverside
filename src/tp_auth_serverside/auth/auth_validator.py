@@ -55,7 +55,7 @@ class AuthValidator:
         except (jwt.ExpiredSignatureError, jwt.InvalidTokenError, jwt.InvalidSignatureError):
             raise credentials_exception
         for scope in security_scopes.scopes:
-            if scope not in available_scopes:
+            if not available_scopes or scope not in available_scopes:
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
                     detail="Not enough permissions",
