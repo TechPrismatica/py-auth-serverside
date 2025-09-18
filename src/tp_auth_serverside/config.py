@@ -57,7 +57,7 @@ class _Secrets(BaseSettings):
             import base64
 
             if not values.get("public_key"):
-                raise ValueError("Public must be provided for RS256 algorithm")
+                raise ValueError("Public key must be provided for RS256 algorithm")
             public_bytes = values["public_key"].encode("utf-8")
             values["public_key"] = base64.b64decode(public_bytes).decode("utf-8")
             if values["authorization_server"] and not values["private_key"]:
