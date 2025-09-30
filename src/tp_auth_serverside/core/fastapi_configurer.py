@@ -5,6 +5,7 @@ from typing import Callable, Optional, Tuple
 from fastapi import APIRouter, Depends, FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.utils import get_openapi
+from fastapi.responses import ORJSONResponse
 from fastapi.security import OAuth2PasswordRequestForm
 from pydantic import BaseModel
 from typing_extensions import Annotated
@@ -146,6 +147,7 @@ def generate_fastapi_app(
         redoc_url=app_config.redoc_url,
         lifespan=app_config.lifespan,
         exception_handlers=app_config.exception_handlers,
+        default_response_class=ORJSONResponse,
     )
     app.openapi = get_custom_api(app, app_config, disable_operation_default)
     if isinstance(health_check_routine, tuple):
