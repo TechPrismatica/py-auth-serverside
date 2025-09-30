@@ -25,6 +25,7 @@ class FastAPIConfig(BaseModel):
     openapi_url: str = Service.openapi_url
     tags_metadata: Optional[list[dict]] = None
     exception_handlers: Optional[dict] = None
+    lifespan: Optional[Callable] = None
 
 
 class StatusResponse(BaseModel):
@@ -143,6 +144,8 @@ def generate_fastapi_app(
         openapi_url=app_config.openapi_url,
         docs_url=app_config.docs_url,
         redoc_url=app_config.redoc_url,
+        lifespan=app_config.lifespan,
+        exception_handlers=app_config.exception_handlers,
     )
     app.openapi = get_custom_api(app, app_config, disable_operation_default)
     if isinstance(health_check_routine, tuple):

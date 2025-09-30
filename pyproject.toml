@@ -1,6 +1,6 @@
 [project]
 name = "tp-auth-serverside"
-version = "0.1.0"
+version = "0.1.1"
 description = "A server side authentication utility which stores session tokens in memory db."
 readme = "README.md"
 requires-python = ">=3.12"
