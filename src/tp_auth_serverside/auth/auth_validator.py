@@ -29,8 +29,8 @@ class AuthValidator:
         self,
         security_scopes: SecurityScopes,
         token: Annotated[str, Depends(oauth2_scheme)],
-        user_id: Annotated[str, Cookie],
-        refresh: Annotated[bool | True, Header] = True,
+        user_id: Annotated[str, Cookie()],
+        refresh: Annotated[bool, Header()] = True,
     ) -> UserInfoSchema:
         if security_scopes.scopes:
             authenticate_value = f"Bearer scope={security_scopes.scope_str}"
