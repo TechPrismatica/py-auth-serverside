@@ -1,7 +1,9 @@
 import logging
-from asyncio import futures
+from concurrent import futures
+from contextlib import asynccontextmanager
 from typing import Callable, Optional, Tuple
 
+from asgi_correlation_id import CorrelationIdMiddleware
 from fastapi import APIRouter, Depends, FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.utils import get_openapi
@@ -100,22 +102,29 @@ def add_cors(app: FastAPI) -> FastAPI:
     return app
 
 
-def add_token_route(app: FastAPI, handler: Callable, asynced: bool = False) -> FastAPI:
-    @app.post("/token", response_model=Token)
+def add_token_route(app: FastAPI, handler: Callable, asynced: bool = False, dependency=None) -> FastAPI:
+    @app.post("/token", response_model=Token, tags=["Authentication"])
     async def token(
-        form_data: Annotated[OAuth2PasswordRequestForm, Depends()], request: Request, response: Response
+        form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
+        request: Request,
+        response: Response,
+        dependency=Depends(dependency),
     ) -> Token:
         if asynced:
-            user_id, payload = await handler(form_data, request, response)
+            user_id, payload = await handler(form_data, request, response, dependency)
         else:
-            user_id, payload = handler(form_data, request, response)
+            user_id, payload = handler(form_data, request, response, dependency)
         token = await AuthenticationHandler().authenticate(response, user_id, payload)
         return Token(user_id=user_id, token=token)
 
     return app
 
 
-def start_refresh_service():
+async def start_refresh_service():
+    """
+    Start the gRPC refresh service as a background task.
+    Returns the server instance for lifecycle management.
+    """
     import grpc
 
     from tp_auth_serverside.core.handler.refresh_handler import RefreshHandler
@@ -125,9 +134,9 @@ def start_refresh_service():
     refresh_pb2_grpc.add_RefreshServiceServicer_to_server(RefreshHandler(), server)
     server.add_insecure_port(Secrets.refresh_url)
     logging.info(f"Starting refresh service on {Secrets.refresh_url}")
-    server.start()
+    await server.start()
     logging.info("Refresh service started")
-    server.wait_for_termination()
+    return server
 
 
 def generate_fastapi_app(
@@ -137,6 +146,31 @@ def generate_fastapi_app(
     token_route_handler: Optional[Callable | Tuple[Callable, bool]] = None,
     health_check_routine: Optional[Callable | Tuple[Callable, bool]] = None,
 ) -> FastAPI:
+    # Create lifespan context manager for gRPC server lifecycle
+    @asynccontextmanager
+    async def lifespan_with_grpc(app: FastAPI):
+        grpc_server = None
+        # Startup: Start the gRPC refresh service
+        if Secrets.authorization_server:
+            logging.info("Initializing gRPC refresh service...")
+            grpc_server = await start_refresh_service()
+
+        # Call user-provided lifespan if exists
+        if app_config.lifespan:
+            async with app_config.lifespan(app):
+                yield
+        else:
+            yield
+
+        # Shutdown: Stop the gRPC server gracefully
+        if grpc_server:
+            logging.info("Shutting down gRPC refresh service...")
+            await grpc_server.stop(grace=5)
+            logging.info("gRPC refresh service stopped")
+
+    # Use the combined lifespan if authorization_server is enabled
+    final_lifespan = lifespan_with_grpc if Secrets.authorization_server else app_config.lifespan
+
     app = FastAPI(
         title=app_config.title,
         version=app_config.version,
@@ -145,7 +179,7 @@ def generate_fastapi_app(
         openapi_url=app_config.openapi_url,
         docs_url=app_config.docs_url,
         redoc_url=app_config.redoc_url,
-        lifespan=app_config.lifespan,
+        lifespan=final_lifespan,
         exception_handlers=app_config.exception_handlers,
         default_response_class=ORJSONResponse,
     )
@@ -158,11 +192,10 @@ def generate_fastapi_app(
     app = add_cors(app)
     if token_route_handler:
         if isinstance(token_route_handler, tuple):
-            app = add_token_route(app, token_route_handler[0], token_route_handler[1])
+            app = add_token_route(app, *token_route_handler)
         else:
             app = add_token_route(app, token_route_handler)
-    if Secrets.authorization_server:
-        start_refresh_service()
+    app.add_middleware(CorrelationIdMiddleware)
     return app
 
 

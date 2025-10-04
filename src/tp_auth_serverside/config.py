@@ -1,10 +1,11 @@
 from enum import StrEnum
 from typing import Any, Optional
 
-from fastapi.security import OAuth2PasswordBearer
 from pydantic import BeforeValidator, Field, model_validator
 from pydantic_settings import BaseSettings
 from typing_extensions import Annotated
+
+from tp_auth_serverside.auth.custom_auth_scheme import CustomOAuth2PasswordBearer
 
 
 def options_decoder(v):
@@ -46,14 +47,15 @@ class _Secrets(BaseSettings):
     leeway: Optional[int] = Field(10, env="LEEWAY")
     expiry: Optional[int] = Field(1440, env="EXPIRY")
     authorization_server: Optional[bool] = Field(False, env="AUTHORIZATION_SERVER")
-    scopes: Optional[dict] = Field(None, env="AUTH_SCOPES")
+    scopes: Optional[dict] = Field(None, alias="AUTH_SCOPES")
     token_url: Optional[str] = Field("/token", env="TOKEN_URL")
     refresh_url: Optional[str] = Field("/refresh", env="REFRESH_URL")
     refresh_restrict_minutes: Optional[int] = Field(2, env="REFRESH_RESTRICT_MINUTES")
 
     @model_validator(mode="before")
     def check_secrets(cls, values) -> dict:
-        if values["algorithm"] == SupportedAlgorithms.RS256:
+        algorithm = values.get("algorithm", SupportedAlgorithms.HS256)
+        if algorithm == SupportedAlgorithms.RS256:
             import base64
 
             if not values.get("public_key"):
@@ -66,7 +68,7 @@ class _Secrets(BaseSettings):
             if private_bytes:
                 private_bytes = private_bytes.encode("utf-8")
                 values["private_key"] = base64.b64decode(private_bytes).decode("utf-8")
-        elif values["algorithm"] == SupportedAlgorithms.HS256:
+        elif algorithm == SupportedAlgorithms.HS256:
             if not values.get("secret_key"):
                 raise ValueError("Secret key must be provided for HS256 algorithm")
         return values
@@ -75,6 +77,6 @@ class _Secrets(BaseSettings):
 Secrets = _Secrets()
 Service = _Service()
 Database = _Database()
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl=Secrets.token_url, scopes=Secrets.scopes)
+oauth2_scheme = CustomOAuth2PasswordBearer(tokenUrl=Secrets.token_url, scopes=Secrets.scopes)
 
 __all__ = ["Secrets", "SupportedAlgorithms", "Database", "Service", "oauth2_scheme"]
