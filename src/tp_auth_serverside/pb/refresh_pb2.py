@@ -18,7 +18,7 @@ _sym_db = _symbol_database.Default()
 
 
 DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(
-    b'\n\rrefresh.proto\x12\x07refresh\x1a\x1bgoogle/protobuf/empty.proto"0\n\x0eRefreshRequest\x12\x0f\n\x07user_id\x18\x01 \x01(\t\x12\r\n\x05token\x18\x02 \x01(\t2Q\n\x0eRefreshService\x12?\n\x0cRefreshToken\x12\x17.refresh.RefreshRequest\x1a\x16.google.protobuf.Emptyb\x06proto3'
+    b'\n\rrefresh.proto\x12\x07refresh"0\n\x0eRefreshRequest\x12\x0f\n\x07user_id\x18\x01 \x01(\t\x12\r\n\x05token\x18\x02 \x01(\t"\x11\n\x0fRefreshResponse2S\n\x0eRefreshService\x12\x41\n\x0cRefreshToken\x12\x17.refresh.RefreshRequest\x1a\x18.refresh.RefreshResponseb\x06proto3'
 )
 
 _globals = globals()
@@ -26,8 +26,10 @@ _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, "refresh_pb2", _globals)
 if not _descriptor._USE_C_DESCRIPTORS:
     DESCRIPTOR._loaded_options = None
-    _globals["_REFRESHREQUEST"]._serialized_start = 55
-    _globals["_REFRESHREQUEST"]._serialized_end = 103
-    _globals["_REFRESHSERVICE"]._serialized_start = 105
-    _globals["_REFRESHSERVICE"]._serialized_end = 186
+    _globals["_REFRESHREQUEST"]._serialized_start = 26
+    _globals["_REFRESHREQUEST"]._serialized_end = 74
+    _globals["_REFRESHRESPONSE"]._serialized_start = 76
+    _globals["_REFRESHRESPONSE"]._serialized_end = 93
+    _globals["_REFRESHSERVICE"]._serialized_start = 95
+    _globals["_REFRESHSERVICE"]._serialized_end = 178
 # @@protoc_insertion_point(module_scope)

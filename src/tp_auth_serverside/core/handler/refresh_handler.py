@@ -1,9 +1,8 @@
 import logging
 
-from google.protobuf import empty_pb2
-
 from tp_auth_serverside.db.memorydb.login import get_token, set_token
 from tp_auth_serverside.db.memorydb.refresh import is_refresh_restricted, set_restrict_refresh
+from tp_auth_serverside.pb import refresh_pb2
 from tp_auth_serverside.pb.refresh_pb2_grpc import RefreshServiceServicer
 from tp_auth_serverside.utilities.jwt_util import JWTUtil
 
@@ -14,10 +13,10 @@ class RefreshHandler(RefreshServiceServicer):
         token = request.token
         if await is_refresh_restricted(user_id, token):
             logging.warning(f"Refresh token is restricted for user_id: {user_id}, token: {token}")
-            return empty_pb2.Empty()
+            return refresh_pb2.RefreshResponse()
         jwt_token = await get_token(user_id, token)
         if not jwt_token:
-            return empty_pb2.Empty()
+            return refresh_pb2.RefreshResponse()
         jwt_util = JWTUtil()
         try:
             logging.info(f"Refreshing token for user_id: {user_id}, token: {token}")
@@ -27,4 +26,4 @@ class RefreshHandler(RefreshServiceServicer):
             await set_restrict_refresh(user_id, token)
         except Exception as e:
             logging.error(f"Error refreshing token for user_id: {user_id}, token: {token}, error: {e}")
-        return empty_pb2.Empty()
+        return refresh_pb2.RefreshResponse()
