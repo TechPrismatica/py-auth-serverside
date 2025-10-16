@@ -1,7 +1,5 @@
 syntax = "proto3";
 
-import "google/protobuf/empty.proto";
-
 package refresh;
 
 message RefreshRequest {
@@ -9,6 +7,10 @@ message RefreshRequest {
     string token = 2;
 }
 
+message RefreshResponse {
+    // Empty response - no fields needed
+}
+
 service RefreshService {
-    rpc RefreshToken (RefreshRequest) returns (google.protobuf.Empty);
+    rpc RefreshToken (RefreshRequest) returns (RefreshResponse);
 }

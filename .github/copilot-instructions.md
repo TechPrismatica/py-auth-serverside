@@ -6,7 +6,14 @@ Always reference these instructions first and fallback to search or bash command
 
 ## Working Effectively
 
+### Environment Manager:
+- **Package Manager**: Uses `uv` for dependency and virtual environment management
+- **Activate Environment**: Always use `source .venv/bin/activate` before running any Python commands
+- **Install Dependencies**: `uv pip install -e .` or `pip install -e .` (within activated venv)
+- **All Python/pip commands must be run within activated venv**
+
 ### Bootstrap, Build, and Test Repository:
+- `source .venv/bin/activate` -- activate the uv-managed virtual environment FIRST
 - `pip install -e .` -- installs the package in development mode. NEVER CANCEL: Takes 10-60 seconds, may timeout due to network issues. Set timeout to 120+ seconds (extra margin for slow mirrors or network issues).
 - `pip install coverage pre-commit pytest pytest-cov pytest-dotenv ruff grpcio-tools` -- installs development dependencies. NEVER CANCEL: Takes 30-120 seconds. Set timeout to 180+ seconds (extra margin for slow mirrors or network issues).
 - `python -m pytest tests/ -v` -- runs unit tests (when tests are available)
@@ -121,10 +128,12 @@ tp-auth-serverside/
 
 ### gRPC and Protocol Buffer Development:
 - **Protobuf Compilation**: `python -m grpc_tools.protoc --proto_path=protos --python_out=src/tp_auth_serverside/pb --grpc_python_out=src/tp_auth_serverside/pb protos/refresh.proto`
+- **After Generation**: Manually fix the import in `refresh_pb2_grpc.py` to use absolute import: `from tp_auth_serverside.pb import refresh_pb2 as refresh__pb2`
 - **Generated Files**: Located in `src/tp_auth_serverside/pb/` (refresh_pb2.py, refresh_pb2_grpc.py)
 - **Service Implementation**: `RefreshHandler` class in `src/tp_auth_serverside/core/handler/refresh_handler.py`
 - **Testing gRPC**: Requires starting both Redis and gRPC server for integration tests
 - **Proto Schema**: `protos/refresh.proto` defines the RefreshService interface
+- **No External Proto Dependencies**: Package uses custom `RefreshResponse` message instead of `google.protobuf.Empty` to avoid external dependencies
 
 ## Database Types and Testing
 

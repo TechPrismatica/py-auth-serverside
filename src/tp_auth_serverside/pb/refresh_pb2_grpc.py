@@ -2,9 +2,8 @@
 """Client and server classes corresponding to protobuf-defined services."""
 
 import grpc
-from google.protobuf import empty_pb2 as google_dot_protobuf_dot_empty__pb2
 
-import tp_auth_serverside.pb.refresh_pb2 as refresh__pb2
+from tp_auth_serverside.pb import refresh_pb2 as refresh__pb2
 
 GRPC_GENERATED_VERSION = "1.75.1"
 GRPC_VERSION = grpc.__version__
@@ -39,7 +38,7 @@ class RefreshServiceStub(object):
         self.RefreshToken = channel.unary_unary(
             "/refresh.RefreshService/RefreshToken",
             request_serializer=refresh__pb2.RefreshRequest.SerializeToString,
-            response_deserializer=google_dot_protobuf_dot_empty__pb2.Empty.FromString,
+            response_deserializer=refresh__pb2.RefreshResponse.FromString,
             _registered_method=True,
         )
 
@@ -59,7 +58,7 @@ def add_RefreshServiceServicer_to_server(servicer, server):
         "RefreshToken": grpc.unary_unary_rpc_method_handler(
             servicer.RefreshToken,
             request_deserializer=refresh__pb2.RefreshRequest.FromString,
-            response_serializer=google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
+            response_serializer=refresh__pb2.RefreshResponse.SerializeToString,
         ),
     }
     generic_handler = grpc.method_handlers_generic_handler("refresh.RefreshService", rpc_method_handlers)
@@ -89,7 +88,7 @@ class RefreshService(object):
             target,
             "/refresh.RefreshService/RefreshToken",
             refresh__pb2.RefreshRequest.SerializeToString,
-            google_dot_protobuf_dot_empty__pb2.Empty.FromString,
+            refresh__pb2.RefreshResponse.FromString,
             options,
             channel_credentials,
             insecure,
