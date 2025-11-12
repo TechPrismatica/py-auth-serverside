@@ -4,7 +4,7 @@ from contextlib import asynccontextmanager
 from typing import Callable, Optional, Tuple
 
 from asgi_correlation_id import CorrelationIdMiddleware
-from fastapi import APIRouter, Depends, FastAPI, Request, Response
+from fastapi import APIRouter, Cookie, Depends, FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.utils import get_openapi
 from fastapi.responses import ORJSONResponse
@@ -14,6 +14,7 @@ from typing_extensions import Annotated
 
 from tp_auth_serverside.auth.auth_validator import AuthValidatorInstance
 from tp_auth_serverside.auth.schemas import Token
+from tp_auth_serverside.auth.user_specs import UserInfoSchema
 from tp_auth_serverside.config import Secrets, Service
 from tp_auth_serverside.core.handler.authentication_handler import AuthenticationHandler
 
@@ -120,6 +121,25 @@ def add_token_route(app: FastAPI, handler: Callable, asynced: bool = False, depe
     return app
 
 
+def add_logout_route(app: FastAPI, handler: Callable = None, asynced: bool = False) -> FastAPI:
+    @app.post("/logout", response_model=StatusResponse, tags=["Authentication"])
+    async def logout(
+        request: Request,
+        response: Response,
+        access_token: Annotated[str, Cookie()],
+        user: Annotated[UserInfoSchema, Depends(AuthValidatorInstance)],
+    ) -> StatusResponse:
+        if handler is not None:
+            if asynced:
+                await handler(request, response, user.user_id, user)
+            else:
+                handler(request, response, user.user_id, user)
+        await AuthenticationHandler().revoke_authentication(response, user.user_id, access_token)
+        return StatusResponse()
+
+    return app
+
+
 async def start_refresh_service():
     """
     Start the gRPC refresh service as a background task.
@@ -144,6 +164,7 @@ def generate_fastapi_app(
     routers: list[APIRouter],
     disable_operation_default: bool = False,
     token_route_handler: Optional[Callable | Tuple[Callable, bool]] = None,
+    logout_route_handler: Optional[Callable | Tuple[Callable, bool]] = None,
     health_check_routine: Optional[Callable | Tuple[Callable, bool]] = None,
 ) -> FastAPI:
     # Create lifespan context manager for gRPC server lifecycle
@@ -195,6 +216,13 @@ def generate_fastapi_app(
             app = add_token_route(app, *token_route_handler)
         else:
             app = add_token_route(app, token_route_handler)
+    if logout_route_handler:
+        if isinstance(logout_route_handler, tuple):
+            app = add_logout_route(app, *logout_route_handler)
+        else:
+            app = add_logout_route(app, logout_route_handler)
+    else:
+        app = add_logout_route(app)
     app.add_middleware(CorrelationIdMiddleware)
     return app
 
