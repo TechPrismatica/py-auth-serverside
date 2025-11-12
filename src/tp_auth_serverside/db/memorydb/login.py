@@ -6,7 +6,7 @@ from tp_auth_serverside.db.memorydb import login_db
 
 
 async def set_token(user_id: str, token: str, expire_minutes: int = Secrets.expiry, short_token: str = None) -> str:
-    short_token = short_token or shortuuid.uuid(name=user_id)
+    short_token = short_token or shortuuid.uuid()
     await login_db.hset(user_id, short_token, orjson.dumps({"token": token, "expire": expire_minutes}))
     await login_db.hexpire(user_id, expire_minutes * 60, short_token)
     return short_token
@@ -17,3 +17,10 @@ async def get_token(user_id: str, short_token: str) -> str | None:
     if token_data:
         return orjson.loads(token_data).get("token")
     return None
+
+
+async def revoke_token(user_id: str, short_token: str = None):
+    if short_token:
+        await login_db.hdel(user_id, short_token)
+    else:
+        await login_db.delete(user_id)

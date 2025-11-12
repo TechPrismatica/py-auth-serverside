@@ -77,6 +77,6 @@ class _Secrets(BaseSettings):
 Secrets = _Secrets()
 Service = _Service()
 Database = _Database()
-oauth2_scheme = CustomOAuth2PasswordBearer(tokenUrl=Secrets.token_url, scopes=Secrets.scopes)
+oauth2_scheme = CustomOAuth2PasswordBearer(tokenUrl=Secrets.token_url, scopes=Secrets.scopes, auto_error=False)
 
 __all__ = ["Secrets", "SupportedAlgorithms", "Database", "Service", "oauth2_scheme"]
